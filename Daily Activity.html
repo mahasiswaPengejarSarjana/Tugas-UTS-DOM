@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Activity Tracker</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+        }
+        input, button {
+            padding: 8px;
+            margin: 5px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 60%;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Daily Activity Tracker</h2>
+
+    <input type="text" id="aktivitas" placeholder="Nama Aktivitas">
+    <input type="number" id="durasi" placeholder="Durasi (menit)">
+    <button onclick="tambahData()">Tambah</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Aktivitas</th>
+                <th>Durasi (menit)</th>
+            </tr>
+        </thead>
+        <tbody id="tabelData"></tbody>
+    </table>
+
+    <h3>Total Durasi: <span id="total">0</span> menit</h3>
+
+    <script>
+        let no = 1;
+        let totalDurasi = 0;
+
+        function tambahData() {
+            let aktivitas = document.getElementById("aktivitas").value;
+            let durasi = parseInt(document.getElementById("durasi").value);
+
+            if (aktivitas === "" || isNaN(durasi)) {
+                alert("Isi data dengan benar!");
+                return;
+            }
+
+            let tabel = document.getElementById("tabelData");
+
+            let row = tabel.insertRow();
+            row.insertCell(0).innerText = no++;
+            row.insertCell(1).innerText = aktivitas;
+            row.insertCell(2).innerText = durasi;
+
+            totalDurasi += durasi;
+            document.getElementById("total").innerText = totalDurasi;
+
+            // reset input
+            document.getElementById("aktivitas").value = "";
+            document.getElementById("durasi").value = "";
+        }
+    </script>
+
+</body>
+</html>
