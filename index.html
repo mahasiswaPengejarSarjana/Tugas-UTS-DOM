@@ -1,78 +1,154 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Daily Activity Tracker</title>
-    <style>
-        body {
-            font-family: Arial;
-            margin: 20px;
-        }
-        input, button {
-            padding: 8px;
-            margin: 5px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 60%;
-            margin-top: 15px;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Student Productivity Analyzer</title>
+  <style>
+    body { font-family: Arial; margin: 24px; max-width: 700px; }
+    input, button { padding: 8px; margin: 4px; }
+    #list, #result, #imageStatus {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 10px;
+      white-space: pre-line;
+    }
+  </style>
 </head>
 <body>
 
-    <h2>Daily Activity Tracker</h2>
+<h2>Student Productivity Analyzer</h2>
+<p>Masukkan aktivitas harian untuk dianalisis oleh AI.</p>
 
-    <input type="text" id="aktivitas" placeholder="Nama Aktivitas">
-    <input type="number" id="durasi" placeholder="Durasi (menit)">
-    <button onclick="tambahData()">Tambah</button>
+<input id="act" placeholder="contoh: belajar, game">
+<input id="min" type="number" placeholder="menit">
 
-    <table>
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Aktivitas</th>
-                <th>Durasi (menit)</th>
-            </tr>
-        </thead>
-        <tbody id="tabelData"></tbody>
-    </table>
+<button onclick="tambah()">Tambah</button>
+<button onclick="analisis()">Analisis AI</button>
 
-    <h3>Total Durasi: <span id="total">0</span> menit</h3>
+<p id="total">Total: 0 menit</p>
 
-    <script>
-        let no = 1;
-        let totalDurasi = 0;
+<h3>Aktivitas:</h3>
+<div id="list">Belum ada data</div>
 
-        function tambahData() {
-            let aktivitas = document.getElementById("aktivitas").value;
-            let durasi = parseInt(document.getElementById("durasi").value);
+<h3>Analisis AI:</h3>
+<div id="result">Belum dianalisis</div>
 
-            if (aktivitas === "" || isNaN(durasi)) {
-                alert("Isi data dengan benar!");
-                return;
-            }
+<h3>Generate Karakter Sesuai Aktifitas:</h3>
+<button onclick="generateImage()">Generate Gambar</button>
+<div id="imageStatus">Belum ada gambar.</div>
+<img id="aiImage" style="max-width:300px;margin-top:12px;display:none;">
 
-            let tabel = document.getElementById("tabelData");
+<script>
+let data = [];
 
-            let row = tabel.insertRow();
-            row.insertCell(0).innerText = no++;
-            row.insertCell(1).innerText = aktivitas;
-            row.insertCell(2).innerText = durasi;
+function render() {
+  let total = 0;
+  let text = "";
 
-            totalDurasi += durasi;
-            document.getElementById("total").innerText = totalDurasi;
+  data.forEach((d, i) => {
+    total += d.m;
+    text += (i + 1) + ". " + d.a + " - " + d.m + " menit\n";
+  });
 
-            // reset input
-            document.getElementById("aktivitas").value = "";
-            document.getElementById("durasi").value = "";
-        }
-    </script>
+  document.getElementById("total").innerText =
+    "Total: " + total + " menit";
+
+  document.getElementById("list").innerText =
+    text || "Belum ada data";
+}
+
+function tambah() {
+  const a = document.getElementById("act").value.trim();
+  const m = Number(document.getElementById("min").value);
+
+  if (!a || !m) return alert("Isi data dengan benar");
+
+  data.push({ a, m });
+
+  document.getElementById("act").value = "";
+  document.getElementById("min").value = "";
+
+  render();
+}
+
+async function analisis() {
+  if (data.length === 0) return;
+
+  document.getElementById("result").innerText = "Menganalisis...";
+
+  const daftar = data.map((d, i) =>
+    (i + 1) + ". " + d.a + " - " + d.m + " menit"
+  ).join("\n");
+
+  try {
+    const res = await fetch("https://activity-ai-backend.vercel.app/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        activities: daftar
+      })
+    });
+
+    const json = await res.json();
+
+    document.getElementById("result").innerText =
+      json.result || json.error || "Tidak ada hasil analisis.";
+
+  } catch {
+    document.getElementById("result").innerText = "Gagal koneksi ke AI";
+  }
+}
+
+async function generateImage() {
+  if (data.length === 0) {
+    document.getElementById("imageStatus").innerText =
+      "Masukkan aktivitas terlebih dahulu.";
+    return;
+  }
+
+  document.getElementById("imageStatus").innerText =
+    "Sedang membuat gambar...";
+  document.getElementById("aiImage").style.display = "none";
+
+  const daftar = data.map((d, i) =>
+    (i + 1) + ". " + d.a + " - " + d.m + " menit"
+  ).join("\n");
+
+  try {
+    const res = await fetch("https://activity-ai-backend.vercel.app/api/generate-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        activities: daftar
+      })
+    });
+
+    const json = await res.json();
+
+    if (json.image) {
+      document.getElementById("aiImage").src =
+        "data:image/png;base64," + json.image;
+
+      document.getElementById("aiImage").style.display = "block";
+      document.getElementById("imageStatus").innerText =
+        "Gambar berhasil dibuat.";
+    } else {
+      document.getElementById("imageStatus").innerText =
+        json.error || "Gagal membuat gambar.";
+    }
+
+  } catch {
+    document.getElementById("imageStatus").innerText =
+      "Gagal menghubungi image API.";
+  }
+}
+
+render();
+</script>
 
 </body>
 </html>
